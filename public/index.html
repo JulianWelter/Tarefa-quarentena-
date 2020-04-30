@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+		<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+		<link
+			href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+			rel="stylesheet"
+			integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN"
+			crossorigin="anonymous"
+		/>
+		<link
+			href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+			rel="stylesheet"
+			integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+			crossorigin="anonymous"
+		/>
+	</head>
+	<body>
+		<div class="container">
+			<h1>Cadastro nomes</h1>
+			<form action="">
+				<div class="form-group">
+					<div class="form-group">
+						<label for="nome">Nome da tarefa</label>
+						<input
+							type="text"
+							class="form-control"
+							id="nome"
+							placeholder="Nome da tarefa"
+						/>
+					</div>
+					<div class="form-group">
+						<label for="descricao">Descrição</label>
+						<input
+							type="text"
+							class="form-control"
+							id="descricao"
+							placeholder="Descrição"
+						/>
+					</div>
+					<div class="form-group">
+						<label for="dataInicio">Data Inicio</label>
+						<input
+							type="text"
+							class="form-control"
+							id="dataInicio"
+							placeholder="30/12/1999"
+						/>
+					</div>
+					<div class="form-group">
+						<label for="dataFim">Data Fim</label>
+						<input
+							type="text"
+							class="form-control"
+							id="dataFim"
+							placeholder="01/01/2000"
+						/>
+					</div>
+					<div class="form-group">
+						<label for="prioridade">Prioridade</label>
+						<select id="prioridade" class="form-control">
+							<option value="NORMAL">NORMAL</option>
+							<option value="URGENTE">URGENTE</option>
+						</select>
+					</div>
+					<button class="btn btn-primary" id="btn">
+						Enviar
+						<i class="fa fa-check" aria-hidden="true"></i>
+					</button>
+				</div>
+				<hr />
+				<h1 style="margin-top: 40px;">Lista nome</h1>
+				<div class="row">
+					<div class="col-6">
+						<ul class="list-group" id="lista" style="list-style: none;"></ul>
+					</div>
+				</div>
+			</form>
+		</div>
+	</body>
+	<script>
+		window.onload = () => {
+			const lista = document.querySelector('#lista');
+			const btn = document.querySelector('#btn');
+			const texto = document.querySelector('#texto');
+			btn.addEventListener('click', create);
+			lista.addEventListener('click', del);
+			lista.addEventListener('click', edit);
+
+			read();
+		};
+		function templateLi(
+			id,
+			name,
+			element = true,
+			descricao,
+			di,
+			df,
+			prioridade
+		) {
+			return `
+			${element ? `<li class='list-group-item'>` : ``}
+			${name}</br> - ${descricao}</br> - ${di}</br> - ${df}</br> - ${prioridade}</br>
+					<i class="btn btn-danger delete fa fa-trash"
+
+					 data-id=${id}></i>
+
+					 <i class="btn btn-primary update fa fa-wrench"
+		                      style='margin-left: 10px'
+					 data-id=${id}></i>
+				</li>
+			${element ? `</li>` : ''}
+
+				`;
+		}
+		function read() {
+			lista.innerHTML = '';
+			axios
+				.get('/read')
+				.then((response) => {
+					response.data.forEach((element) => {
+						lista.innerHTML += templateLi(element.id, element.name);
+					});
+				})
+				.catch((error) => {
+					console.log(error);
+				});
+		}
+		function create() {
+			axios
+				.post('/create', {
+					name: nome.value,
+					description: descricao.value,
+					start_date: dataInicio.value,
+					end_date: dataFim.value,
+					priority: prioridade.value,
+				})
+				.then((response) => {
+					console.log('foi');
+					lista.innerHTML += templateLi(
+						response.data[0],
+						nome.value,
+						descricao.value,
+						dataInicio.value,
+						dataFim.value,
+						prioridade.value
+					);
+				})
+				.catch((error) => {
+					console.log('nao foi');
+				});
+		}
+
+		function edit(element) {
+			console.log(element.target);
+			if (element.target.classList.contains('update')) {
+				/*const input = document.createElement('input');
+				const id = element.target.dataset.id;
+				const pai = element.target.parentElement;
+
+				input.type = 'text';
+				input.setAttribute('value', '');
+
+				pai.innerHTML = '';
+				pai.appendChild(input);*/
+				const id = element.target.dataset.id;
+				procura(id);
+				//	input.addEventListener('keydown', update.bind(pai, id, input));
+				//	input.focus();
+			}
+		}
+		function procura(id) {
+			axios
+				.get(`/show/${id}`)
+				.then((response) => {
+					nome.value = response.name;
+					descricao.value = response.descricao;
+					dataInicio.value = response.dataInicio;
+					dataFim.value = response.dataFim;
+					prioridade.value = response.prioridade;
+				})
+				.catch((error) => {
+					console.log(error);
+				});
+		}
+
+		function update(id, inputName) {
+			const x = event.key;
+			if (x == null || x != 'Enter') return;
+			axios
+				.put(`/alterar/${id}`, {
+					name: inputName.value,
+					description: inputDescricao.value,
+					start_date: inputDataInicio.value,
+					end_date: inputDataFim.value,
+					priority: inputPrioridade.value,
+				})
+				.then((response) => {
+					console.log(response);
+					if (response.status == 200) {
+						this.innerHTML = templateLi(id, input, false);
+					}
+				})
+				.catch((error) => {
+					console.log(error);
+				});
+		}
+
+		function del(element) {
+			console.log(element.target);
+			if (element.target.classList.contains('delete')) {
+				const id = element.target.dataset.id;
+				axios
+					.delete(`/delete/${id}`)
+					.then((response) => {
+						console.log(response);
+						if (response.status == 200) {
+							lista.removeChild(element.path[1]);
+						}
+					})
+					.catch((error) => {
+						console.log(error);
+					});
+			}
+		}
+	</script>
+</html>
